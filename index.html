@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bombom Finance</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #f5efe6;
+      color: #514236;
+    }
+    .container {
+      max-width: 480px;
+      margin: auto;
+    }
+    .card {
+      background: #fffaf3;
+      padding: 20px;
+      border-radius: 18px;
+      margin-bottom: 15px;
+      box-shadow: 0 3px 12px #0000000a;
+    }
+    h1 { font-size: 25px; }
+    .balance {
+      font-size: 30px;
+      font-weight: bold;
+      margin: 12px 0;
+    }
+    input, button {
+      width: 100%;
+      padding: 13px;
+      border-radius: 10px;
+      border: 1px solid #ddcdbb;
+      margin-top: 9px;
+      font-size: 15px;
+    }
+    button {
+      background: #80654e;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .wallet {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee2d4;
+    }
+    .muted { color: #988878; font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Bombom Finance 🤎</h1>
+  <p class="muted">Atur uangmu, bangun masa depanmu.</p>
+
+  <div class="card">
+    <div class="muted">Total Saldo</div>
+    <div class="balance" id="total">Rp0</div>
+    <div class="muted">Target pemasukan bulanan: Rp2.000.000</div>
+  </div>
+
+  <div class="card">
+    <h3>Tambah Pemasukan</h3>
+    <input id="income" type="number" placeholder="Nominal pemasukan">
+    <button onclick="addIncome()">Bagikan Otomatis</button>
+  </div>
+  <div class="card">
+  <h3>Catat Pengeluaran</h3>
+  <select id="walletSelect">
+    <option value="0">Dana Darurat</option>
+    <option value="1">Tabungan Tujuan</option>
+    <option value="2">Kebutuhan Pribadi</option>
+    <option value="3">Investasi</option>
+    <option value="4">Hiburan</option>
+    <option value="5">Sedekah</option>
+    <option value="6">Cadangan</option>
+  </select>
+  <input id="expense" type="number" placeholder="Nominal pengeluaran">
+  <button onclick="addExpense()">Simpan Pengeluaran</button>
+</div>
+  <div class="card">
+    <h3>Dompet Saya</h3>
+    <div id="wallets"></div>
+  </div>
+</div>
+
+<script>
+const categories = [
+  ["Dana Darurat", 25],
+  ["Tabungan Tujuan", 25],
+  ["Kebutuhan Pribadi", 20],
+  ["Investasi", 10],
+  ["Hiburan", 7.5],
+  ["Sedekah", 5],
+  ["Cadangan", 7.5]
+];
+
+let balances = JSON.parse(localStorage.getItem("balances")) ||
+  [300000, 1200000, 0, 0, 0, 0, 0];
+
+function rupiah(value) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0
+  }).format(value);
+}
+
+function save() {
+  localStorage.setItem("balances", JSON.stringify(balances));
+}
+
+function render() {
+  document.getElementById("total").textContent =
+    rupiah(balances.reduce((a,b) => a+b, 0));
+
+  document.getElementById("wallets").innerHTML =
+    categories.map((c,i) => `
+      <div class="wallet">
+        <span>${c[0]}</span>
+        <strong>${rupiah(balances[i])}</strong>
+      </div>
+    `).join("");
+}
+
+function addIncome() {
+  const amount = Math.floor(Number(
+    document.getElementById("income").value
+  ));
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    alert("Masukkan nominal yang benar.");
+    return;
+  }
+
+  let distributed = 0;
+
+  categories.forEach((c,i) => {
+    let part = i === categories.length - 1
+      ? amount - distributed
+      : Math.floor(amount * c[1] / 100);
+
+    balances[i] += part;
+    distributed += part;
+  });
+
+  save();
+  render();
+  document.getElementById("income").value = "";
+  alert("Pemasukan berhasil dibagikan!");
+}
+
+render();
+function addExpense() {
+  const wallet = Number(document.getElementById("walletSelect").value);
+  const amount = Math.floor(Number(document.getElementById("expense").value));
+
+  if (!Number.isSafeInteger(amount) || amount <= 0) {
+    alert("Masukkan nominal yang benar.");
+    return;
+  }
+
+  if (amount > balances[wallet]) {
+    alert("Saldo tidak mencukupi!");
+    return;
+  }
+
+  balances[wallet] -= amount;
+  save();
+  render();
+
+  document.getElementById("expense").value = "";
+  alert("Pengeluaran berhasil dicatat!");
+}
+</script>
+</body>
+</html>
